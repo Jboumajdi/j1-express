@@ -10,6 +10,7 @@ import { requireJson } from './middlewares/requireJson.js';
 
 const app = express();
 
+app.use(express.urlencoded({ extended: true }));
 // 1. Lire les corps JSON dans req.body (sinon req.body vaut undefined). JSON illisible → erreur 400.
 app.use(express.json());
 // 2. Une écriture sans Content-Type: application/json → 415, avant même d'atteindre une route.
