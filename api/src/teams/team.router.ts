@@ -32,9 +32,8 @@ teamRouter.get('/', validateQuery(TeamQuerySchema), async (_req, res) => {
 teamRouter.get('/:id', async (req, res) => {
 
   const id = parseId(req.params.id, 'Team');
-
-  const team = await teamRepository.findOne(id);
-
+  const team = await teamRepository.findOneWithPlayers(id);
+  
   if (!team) {
     throw new HttpError(404, 'Team not found');
   }

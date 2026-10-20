@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { PlayerSummary } from '../players/player.schema.js';
 
 // Informations d'une équipe
 export interface Team {
@@ -29,3 +30,7 @@ export type TeamInput = z.infer<typeof TeamSchema>;
 
 // Vérification des données pour modifier une équipe
 export const TeamPatchSchema = TeamSchema.partial();
+
+export interface TeamWithPlayers extends Team {
+  players: PlayerSummary[];
+}

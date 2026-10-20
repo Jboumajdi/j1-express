@@ -1,6 +1,8 @@
 import type { Team } from './team.schema.js';
 import { BaseRepository } from '../repository.js';
 import { query } from '../db.js';
+import { playerRepository } from '../players/player.repository.js';
+import type { TeamWithPlayers } from './team.schema.js';
 
 class TeamRepository extends BaseRepository<Team> {
 
@@ -26,6 +28,21 @@ class TeamRepository extends BaseRepository<Team> {
        ORDER BY name`,
       [country]
     );
+  }
+  async findOneWithPlayers(id: number): Promise<TeamWithPlayers | null> {
+
+    const team = await this.findOne(id);
+
+    if (!team) {
+      return null;
+    }
+
+    const players = await playerRepository.findByTeam(id);
+
+    return {
+      ...team,
+      players
+    };
   }
 }
 
