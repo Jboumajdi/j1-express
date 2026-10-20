@@ -4,6 +4,7 @@ import express from 'express';
 import { docsRouter } from './docs.router.js';
 import { gameRouter } from './games/game.router.js';
 import { healthRouter } from './health.router.js';
+import { teamRouter } from './teams/team.router.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { notFound } from './middlewares/notFound.js';
 import { requireJson } from './middlewares/requireJson.js';
@@ -20,6 +21,7 @@ app.use(requireJson);
 app.use('/api/health', healthRouter);
 app.use('/api', docsRouter); // /api/docs (Swagger UI) et /api/openapi.json
 app.use('/api/games', gameRouter);
+app.use('/api/teams', teamRouter);
 
 // 4. Aucune route n'a répondu → 404 en JSON.
 app.use(notFound);
