@@ -1,8 +1,8 @@
-import type { Team } from './team.schema.js';
+
+import type { Team, TeamWithPlayers } from './team.schema.js';
 import { BaseRepository } from '../repository.js';
 import { query } from '../db.js';
-import { playerRepository } from '../players/player.repository.js';
-import type { TeamWithPlayers } from './team.schema.js';
+import { players } from '../players/player.repository.js';
 
 class TeamRepository extends BaseRepository<Team> {
 
@@ -29,19 +29,25 @@ class TeamRepository extends BaseRepository<Team> {
       [country]
     );
   }
+
+  // Récupérer une équipe avec ses joueurs
   async findOneWithPlayers(id: number): Promise<TeamWithPlayers | null> {
 
+    // Chercher l'équipe
     const team = await this.findOne(id);
 
+    // Si l'équipe n'existe pas
     if (!team) {
       return null;
     }
 
-    const players = await playerRepository.findByTeam(id);
+    // Récupérer les joueurs de cette équipe
+    const joueurs = await players.findByTeam(id);
 
+    // Renvoyer l'équipe avec ses joueurs
     return {
       ...team,
-      players
+      players: joueurs
     };
   }
 }

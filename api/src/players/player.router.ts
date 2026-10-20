@@ -2,79 +2,88 @@
 import { Router } from 'express';
 import { HttpError } from '../errors.js';
 import { parseId } from '../middlewares/params.js';
-import { validate } from '../middlewares/validate.js';
+import { validate, validateQuery } from '../middlewares/validate.js';
 
 import {
   PlayerSchema,
   PlayerPatchSchema,
-  type PlayerInput
+  PlayerSearchSchema,
+  type PlayerInput,
+  type PlayerSearch
 } from './player.schema.js';
 
-import { playerRepository } from './player.repository.js';
+import { players } from './player.repository.js';
 
 export const playerRouter = Router();
 
 
-// GET : tous les joueurs
-playerRouter.get('/', async (_req, res) => {
-  const joueurs = await playerRepository.findViews();
+// GET : rechercher les joueurs
+playerRouter.get('/', validateQuery(PlayerSearchSchema), async (_req, res) => {
 
-  res.json(joueurs);
+  const filtres = res.locals.query as PlayerSearch;
+
+  const resultat = await players.search(filtres);
+
+  res.set('X-Total-Count', String(resultat.total));
+
+  res.json(resultat.items);
 });
 
 
-// GET : un joueur par son ID
+// GET : récupérer un joueur par son ID
 playerRouter.get('/:id', async (req, res) => {
+
   const id = parseId(req.params.id, 'Player');
 
-  const joueur = await playerRepository.findView(id);
+  const player = await players.findView(id);
 
-  if (!joueur) {
+  if (!player) {
     throw new HttpError(404, 'Player not found');
   }
 
-  res.json(joueur);
+  res.json(player);
 });
 
 
 // POST : créer un joueur
 playerRouter.post('/', validate(PlayerSchema), async (req, res) => {
-  const nouveauJoueur = await playerRepository.insert(
-    req.body as PlayerInput
-  );
 
-  const joueur = await playerRepository.findView(nouveauJoueur.id);
+  const nouveauJoueur = await players.insert(req.body as PlayerInput);
+
+  const player = await players.findView(nouveauJoueur.id);
 
   res.status(201)
     .location(`/api/players/${nouveauJoueur.id}`)
-    .json(joueur);
+    .json(player);
 });
 
 
 // PATCH : modifier un joueur
 playerRouter.patch('/:id', validate(PlayerPatchSchema), async (req, res) => {
+
   const id = parseId(req.params.id, 'Player');
 
-  const modification = await playerRepository.update(
+  const updated = await players.update(
     id,
     req.body as Partial<PlayerInput>
   );
 
-  if (!modification) {
+  if (!updated) {
     throw new HttpError(404, 'Player not found');
   }
 
-  const joueur = await playerRepository.findView(id);
+  const player = await players.findView(id);
 
-  res.json(joueur);
+  res.json(player);
 });
 
 
 // DELETE : supprimer un joueur
 playerRouter.delete('/:id', async (req, res) => {
+
   const id = parseId(req.params.id, 'Player');
 
-  const deleted = await playerRepository.delete(id);
+  const deleted = await players.delete(id);
 
   if (!deleted) {
     throw new HttpError(404, 'Player not found');

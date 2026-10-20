@@ -5,10 +5,11 @@ import { query } from '../db.js';
 import type {
   Player,
   PlayerView,
-  PlayerSummary
+  PlayerSummary,
+  PlayerSearch
 } from './player.schema.js';
 
-// Requête pour récupérer un joueur avec son équipe
+// Informations du joueur avec son équipe
 const VIEW = `
   SELECT
     p.id,
@@ -46,13 +47,6 @@ class PlayerRepository extends BaseRepository<Player> {
     );
   }
 
-  // Récupérer tous les joueurs
-  findViews(): Promise<PlayerView[]> {
-    return query<PlayerView>(
-      `${VIEW} ORDER BY p.nickname`
-    );
-  }
-
   // Récupérer un joueur par son ID
   async findView(id: number): Promise<PlayerView | null> {
     const joueurs = await query<PlayerView>(
@@ -73,6 +67,63 @@ class PlayerRepository extends BaseRepository<Player> {
       [teamId]
     );
   }
+
+  // Rechercher des joueurs
+  async search(filtres: PlayerSearch) {
+
+    const { page, limit, country, teamId, q } = filtres;
+
+    const conditions: string[] = [];
+    const valeurs: (string | number)[] = [];
+
+    // Filtrer par pays
+    if (country) {
+      valeurs.push(country);
+      conditions.push(`p.country = $${valeurs.length}`);
+    }
+
+    // Filtrer par équipe
+    if (teamId) {
+      valeurs.push(teamId);
+      conditions.push(`p.team_id = $${valeurs.length}`);
+    }
+
+    // Rechercher dans le pseudo
+    if (q) {
+      valeurs.push(`%${q}%`);
+      conditions.push(`p.nickname ILIKE $${valeurs.length}`);
+    }
+
+    // Construire le WHERE
+    let where = '';
+
+    if (conditions.length > 0) {
+      where = 'WHERE ' + conditions.join(' AND ');
+    }
+
+    // Compter les résultats
+    const resultat = await query<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM player p ${where}`,
+      valeurs
+    );
+
+    const total = Number(resultat[0]?.count ?? 0);
+
+    // Calculer la pagination
+    const offset = (page - 1) * limit;
+
+    // Récupérer les joueurs
+    const items = await query<PlayerView>(
+      `${VIEW} ${where}
+       ORDER BY p.nickname
+       LIMIT $${valeurs.length + 1}
+       OFFSET $${valeurs.length + 2}`,
+      [...valeurs, limit, offset]
+    );
+
+    return { items, total };
+  }
 }
 
-export const playerRepository = new PlayerRepository();
+export const players = new PlayerRepository();
